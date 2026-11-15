@@ -1,0 +1,8 @@
+{
+  "name": "overblik",
+  "version": "0.1.0",
+  "description": "Venligt overblikspanel: kontekst, forbrug, Komprimér/Ny-knapper, subagenter og outputfiler med Åbn-knap",
+  "author": { "name": "biksemad1" },
+  "license": "MIT",
+  "types": "./types/index.d.ts"
+}

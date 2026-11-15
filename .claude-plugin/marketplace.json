@@ -1,0 +1,5 @@
+{
+  "name": "simple-cli",
+  "owner": { "name": "biksemad1" },
+  "plugins": [{ "name": "overblik", "source": "./" }]
+}
