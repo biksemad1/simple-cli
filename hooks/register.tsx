@@ -2,6 +2,7 @@ import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register } from 'claude-code'
 
 import type { AgentRow, OutFile, Usage } from '../types'
+import { VEJLEDNING } from './vejledning'
 
 const PANE = 'overblik'
 const TITLE = 'Overblik'
@@ -104,14 +105,25 @@ async function refresh($: EngineInterface) {
   }
 }
 
-export const register: Register = on => {
+export const register: Register = (on, options) => {
   let cwd = ''
+
+  // Dansk vejledning til Claude (som en CLAUDE.md). Kan slås fra i /config.
+  if (options.begynderhjaelp !== false) {
+    on('prompt.compose', async ($, e, next) => {
+      const r = await next(e)
+
+      return {
+        sections: [...r.sections, { id: 'overblik:vejledning', text: VEJLEDNING, scope: 'session' }],
+      }
+    }).catch(($, e, next) => next(e))
+  }
 
   on('session.start', async ($, e, next) => {
     cwd = e.cwd
     await $.command.register({
       name: 'overblik',
-      description: 'Vis overblikspanelet (kontekst, forbrug, agenter, filer)',
+      description: 'Vis overblikspanelet (hukommelse, forbrug, opgaver, filer)',
     })
     void $.ui.open({ id: PANE, title: TITLE, columns: 38 })
     $.clock.every(3000, () => refresh($))
@@ -174,16 +186,13 @@ export const register: Register = on => {
 
     return (
       <Box flexDirection="column">
-        <Text bold>KONTEKST</Text>
+        <Text bold>HUKOMMELSE</Text>
         <Text>
-          <Text color={levelColor(pct)}>{bar(pct)}</Text> {u?.percent != null ? `${u.percent}%` : '–'}
+          <Text color={levelColor(pct)}>{bar(pct)}</Text> {u?.percent != null ? `${u.percent} % brugt` : '–'}
         </Text>
-        {u?.tokens != null && (
-          <Text dimColor>
-            {Math.round(u.tokens / 1000)}k af {Math.round(u.window / 1000)}k tokens
-          </Text>
-        )}
-        {pct >= 80 && <Text color="yellow">Tæt på fyldt – tryk Komprimér</Text>}
+        {pct < 65 && <Text dimColor>Hvor meget Claude kan huske af samtalen</Text>}
+        {pct >= 65 && pct < 85 && <Text color="yellow">Samtalen er ved at være lang</Text>}
+        {pct >= 85 && <Text color="red">Næsten fuld – tryk Ryd op i samtalen</Text>}
 
         <Box marginTop={1} flexDirection="column">
           <Text bold>FORBRUG</Text>
@@ -197,33 +206,38 @@ export const register: Register = on => {
           {u == null && <Text dimColor>Vises efter første svar</Text>}
         </Box>
 
-        <Box marginTop={1} gap={1}>
+        <Box marginTop={1} flexDirection="column">
           <Button
             key="compact"
-            label="Komprimér"
+            label="Ryd op i samtalen"
             onPress={async () => {
+              $.ui.toast('Rydder op – Claude beholder det vigtigste…')
               try {
                 const r = await $.session.compact()
-                $.ui.toast(r && 'skip' in r && r.skip ? 'Komprimering sprunget over' : 'Samtalen er komprimeret')
+                $.ui.toast(r && 'skip' in r && r.skip ? 'Der var ikke noget at rydde op i' : 'Færdig – samtalen fylder mindre nu')
               } catch {
-                $.ui.toast('Vent til Claude er færdig, og prøv igen')
+                $.ui.toast('Vent til Claude er færdig med at svare, og prøv igen')
               }
               void refresh($)
             }}
           />
-          <Button
-            key="clear"
-            label="Ny samtale"
-            onPress={async () => {
-              const r = await $.prompt.fill({ text: '/clear' })
-              $.ui.toast(r.isFilled ? 'Tryk Enter for at starte forfra' : 'Skriv /clear for at starte forfra')
-            }}
-          />
+          <Text dimColor>Pakker samtalen sammen, så den fylder mindre</Text>
+          <Box marginTop={1}>
+            <Button
+              key="clear"
+              label="Ny samtale"
+              onPress={async () => {
+                const r = await $.prompt.fill({ text: '/clear' })
+                $.ui.toast(r.isFilled ? 'Tryk Enter for at starte en ny samtale' : 'Skriv /clear og tryk Enter for en ny samtale')
+              }}
+            />
+          </Box>
+          <Text dimColor>Starter forfra – filerne bliver liggende</Text>
         </Box>
 
         <Box marginTop={1} flexDirection="column">
-          <Text bold>AGENTER</Text>
-          {shownAgents.length === 0 && <Text dimColor>Ingen hjælpere i gang</Text>}
+          <Text bold>CLAUDE ARBEJDER PÅ</Text>
+          {shownAgents.length === 0 && <Text dimColor>Ingen ekstra opgaver lige nu</Text>}
           {shownAgents.map(a => {
             const isRunning = running.includes(a)
             return (
@@ -231,15 +245,15 @@ export const register: Register = on => {
                 <Text color={isRunning ? 'cyan' : a.status === 'failed' ? 'red' : 'green'}>
                   {isRunning ? '●' : a.status === 'failed' ? '✗' : '✓'}
                 </Text>{' '}
-                {shorten(a.description || 'Agent', nameWidth)} ({STATUS_DA[a.status] ?? a.status})
+                {shorten(a.description || 'Opgave', nameWidth)} ({STATUS_DA[a.status] ?? a.status})
               </Text>
             )
           })}
         </Box>
 
         <Box marginTop={1} flexDirection="column">
-          <Text bold>FILER</Text>
-          {fileList.length === 0 && <Text dimColor>Ingen filer skrevet endnu</Text>}
+          <Text bold>FILER CLAUDE HAR LAVET</Text>
+          {fileList.length === 0 && <Text dimColor>Ingen endnu – de dukker op her</Text>}
           {fileList.slice(0, 8).map(f => (
             <Box>
               <Button key={`open-${f.path}`} label="Åbn" onPress={() => openPath($, f.path)} />
@@ -254,8 +268,10 @@ export const register: Register = on => {
         </Box>
 
         <Box marginTop={1} flexDirection="column">
-          <Text dimColor>Tip: træk en fil ind i vinduet for at</Text>
-          <Text dimColor>vedhæfte den · Alt+V indsætter billede</Text>
+          <Text bold>TIPS</Text>
+          <Text dimColor>• Træk en fil ind i vinduet for at vise den til Claude</Text>
+          <Text dimColor>• Kopiér et billede og tryk Alt+V</Text>
+          <Text dimColor>• Tryk Esc for at stoppe Claude</Text>
         </Box>
       </Box>
     )

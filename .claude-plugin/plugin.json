@@ -1,8 +1,16 @@
 {
   "name": "overblik",
-  "version": "0.1.0",
-  "description": "Venligt overblikspanel: kontekst, forbrug, Komprimér/Ny-knapper, subagenter og outputfiler med Åbn-knap",
+  "version": "0.2.0",
+  "description": "Venligt dansk overblikspanel til Claude Code: hukommelse, forbrug, opgaver og filer med Åbn-knap – plus dansk begyndervejledning til Claude",
   "author": { "name": "biksemad1" },
   "license": "MIT",
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "begynderhjaelp": {
+      "type": "boolean",
+      "title": "Dansk begyndervejledning",
+      "description": "Fortæller Claude, at brugeren er ingeniør uden kodeerfaring: svar på dansk uden jargon, og vælg den simpleste løsning (helst én HTML-fil).",
+      "default": true
+    }
+  }
 }

@@ -4,13 +4,25 @@ Et roligt overblikspanel ved siden af chatten i Claude Code, så det er nemmere 
 
 Panelet viser:
 
-- **Kontekst** – hvor fyldt samtalen er, som en farvet bjælke (grøn → gul → rød)
-- **Forbrug** – omtrentlig pris for sessionen og hvor tæt du er på abonnementets grænser
-- **Knapper** – *Komprimér* (pakker samtalen sammen, når den bliver lang) og *Ny samtale*
-- **Agenter** – hjælpere (subagenter), Claude har sat i gang, og om de kører eller er færdige
-- **Filer** – de filer, Claude har skrevet, med en *Åbn*-knap (HTML åbnes i browseren, scripts i din editor) og en knap til at åbne projektmappen
+- **Hukommelse** – hvor meget Claude kan huske af samtalen, som en farvet bjælke (grøn → gul → rød)
+- **Forbrug** – omtrentlig pris for sessionen og hvor meget af abonnementets kvote (5 timer / 7 dage) der er brugt
+- **Ryd op i samtalen** – pakker en lang samtale sammen, så Claude beholder det vigtigste
+- **Ny samtale** – starter forfra; filerne bliver liggende
+- **Claude arbejder på** – ekstra opgaver, Claude har sat i gang, og om de kører eller er færdige
+- **Filer Claude har lavet** – med en *Åbn*-knap (HTML åbnes i browseren, scripts i din editor) og en knap til at åbne mappen
 
 Panelet åbner af sig selv, hver gang du starter `claude` i en mappe. Har du lukket det, får du det tilbage med `/overblik`.
+
+## Dansk vejledning til Claude
+
+Plugin'et fortæller også Claude, hvem brugeren er – ligesom en `CLAUDE.md`, men uden at røre dine egne filer:
+
+- Brugeren er ingeniør med stærk faglig forståelse, men uden kodeerfaring
+- Svar på dansk, kort og uden teknisk jargon
+- Vælg altid den simpleste løsning, der er nem at dele og bygge videre på: helst **én HTML-fil**, ellers Excel/CSV, og kun Python når det er nødvendigt (med en `.bat`-fil til dobbeltklik)
+- Spørg før noget installeres, slettes eller overskrives
+
+Teksten står i [`hooks/vejledning.ts`](hooks/vejledning.ts) og kan rettes til. Erfarne brugere kan slå den fra under `/config` → *Dansk begyndervejledning*.
 
 ## Installation
 

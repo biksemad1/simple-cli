@@ -42,3 +42,25 @@ test('panelet viser en skrevet fil og knapperne, i terminal og desktop', async (
     await ui.unmount()
   }
 })
+
+test('panelet bruger danske, ikke-tekniske ord', async ($, on) => {
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /HUKOMMELSE/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /CLAUDE ARBEJDER PÅ/ })).toBeTruthy()
+  expect(await ui.find({ type: 'Text', text: /tokens|KONTEKST|AGENTER/ })).toBeFalsy()
+  await ui.unmount()
+})
+
+test('den danske vejledning lægges sidst i systemprompten', async ($, on) => {
+  on('prompt.compose', () => ({ sections: [{ id: 'intro', text: 'x', scope: 'shared' }] }))
+  const r = await $.prompt.compose({ model: 'm', promptModel: 'm', surfaces: [], tools: [], outputStyle: null, traits: [] })
+  const last = r.sections[r.sections.length - 1]
+  expect(last?.id).toBe('overblik:vejledning')
+  expect(last?.text).toContain('simpleste løsning')
+})
+
+test('vejledningen kan slås fra', { options: { begynderhjaelp: false } }, async ($, on) => {
+  on('prompt.compose', () => ({ sections: [{ id: 'intro', text: 'x', scope: 'shared' }] }))
+  const r = await $.prompt.compose({ model: 'm', promptModel: 'm', surfaces: [], tools: [], outputStyle: null, traits: [] })
+  expect(r.sections.map(s => s.id)).toEqual(['intro'])
+})
